@@ -4,9 +4,9 @@ h2. statement
 
 Working on a Java training environement, I was hurting myself on a simple issue: any command executed through the "sudo" admin passthrough was not successful due to leak of environement variables set into some of my specific files:
 
-* @/etc/default/javaenvsetting@
-* @/etc/skel/.javaenvsettings@
-* @~/.javaenvsettings@.
+* "/etc/default/javaenvsetting":./etc/default/javaenvsetting
+* "/etc/skel/.javaenvsettings":./etc/skel/.javaenvsettings
+* "/etc/skel/.bashrc":./etc/skel/.bashrc
 
 h2. solution
 
@@ -16,7 +16,7 @@ in such path you can create any file, (with a chmod 0440) containing any sudo de
 
 With the magical following command you will be abale to maintain some environement variables set for a connected user to the sudo environement.
 
-@/etc/sudoers.d/environement@
+file : "/etc/sudoers.d/environement":./etc/sudoers.d/environement
 
 bc(bash). Defaults env_keep +="JAVA_VERSION"
 Defaults env_keep +="ST_VERSION"
