@@ -1,0 +1,43 @@
+h1. how to Maintaining Env variables for sudoers
+
+h2. statement
+
+Working on a Java training environement, I was hurting myself on a simple issue: any command executed through the "sudo" admin passthrough was not successful due to leak of environement variables set into some of my specific files:
+
+* @/etc/default/javaenvsetting@
+* @/etc/skel/.javaenvsettings@
+* @~/.javaenvsettings@.
+
+h2. solution
+
+So, seeking the web for a solid solution, I've found an entry from "stackoverflow":http://stackoverflow.com/questions/8633461/how-to-keep-environment-variables-when-using-sudo explaining secret of the @/etc/sudoers.d/@ directory.
+
+in such path you can create any file, (with a chmod 0440) containing any sudo definition.
+
+With the magical following command you will be abale to maintain some environement variables set for a connected user to the sudo environement.
+
+@/etc/sudoers.d/environement@
+
+bc(bash). Defaults env_keep +="JAVA_VERSION"
+Defaults env_keep +="ST_VERSION"
+Defaults env_keep +="MAVEN_VERSION"
+Defaults env_keep +="ECLIPSE_VERSION"
+Defaults env_keep +="INTELLIJ_VERSION"
+Defaults env_keep +="TOOLS_HOME"
+Defaults env_keep +="ECLIPSE_HOME"
+Defaults env_keep +="M2_HOME"
+Defaults env_keep +="JAVA_HOME"
+Defaults env_keep +="PATH"
+Defaults env_keep +="INTELLIJ_HOME"
+
+With such lines all those variables from user environement will be maintained (env_keep) to the sudo execution environement.
+
+h2. Any new user ?
+
+for any newly created user, the previoulsy prensented files are added to the @.bashrc@ execution process, so environement variables are well set and usable.
+
+That's it !
+
+Have fun !
+
+McG.

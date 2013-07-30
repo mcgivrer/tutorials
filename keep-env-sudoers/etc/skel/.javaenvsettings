@@ -1,0 +1,7 @@
+#!/bin/sh
+# Uncomment the line to activate the needed eclipse version.
+#export ECLIPSE_VERSION=4.2
+export ECLIPSE_VERSION=3.7
+export JAVA_VERSION=java-6-openjdk-amd64
+export MAVEN_VERSION=3.0.5
+export INTELLIJ_VERSION=129.713

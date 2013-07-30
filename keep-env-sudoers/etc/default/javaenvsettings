@@ -1,0 +1,23 @@
+#!/bin/sh 
+# Tools Environment settings 
+#-------------------------- 
+export ECLIPSE_VERSION=3.7
+export MAVEN_VERSION=3.0.5
+export JAVA_VERSION=java-7-oracle
+# If exists execute user settings 
+if [ -f ~/.javaenvsettings ]; then
+   . ~/.javaenvsettings
+fi # set Tools path
+export TOOLS_HOME=/opt/tools
+export JAVA_TOOLS_HOME=$TOOLS_HOME/java
+export JAVA_HOME=/usr/lib/jvm/$JAVA_VERSION
+# set Maven Settings
+export MAVEN_HOME=$JAVA_TOOLS_HOME/maven/$MAVEN_VERSION
+export M2_HOME=$MAVEN_HOME
+export M2=$MAVEN_HOME/bin
+# set Eclipse Path
+export ECLIPSE_HOME=$TOOLS_HOME/eclipse/$ECLIPSE_VERSION
+#set IntelliJ Home
+export INTELLIJ_HOME=$TOOLS_HOME/idea/$INTELLIJ_VERSION
+# Path modification according to Tools Settings
+export PATH=$PATH:$M2:$ECLIPSE_HOME:$INTELLIJ_HOME/bin:.
