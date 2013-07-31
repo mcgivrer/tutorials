@@ -1,0 +1,560 @@
+h1. How to create a continuous integration pipe for any maven+git application ?
+
+My last goal was to create and install a full working pipe of Continue Integration for my Java &quot;mavenized&quot; and &quot;gitified&quot; projects.
+
+Using our good old pals Jenkins and Sonar, with my older pal ubuntu in a VM, we were able to create a &quot;Ready to use Integration machine&quot;.
+Lorem ipsum minim Duis culpa ut tempor veniam eiusmod velit. Lorem ipsum irure proident ea deserunt ex et velit sint veniam. Lorem ipsum culpa nulla Duis ea ullamco aute ea amet cupidatat labore irure labore. 
+So... action !
+
+h2. First Step : VM and Ubuntu 12.04
+
+1. Get VirtualBox
+
+bc(shell). $ sudo apt-get install virtualbox
+
+2. Download ISO image of Ubuntu Server
+
+download the 32bits or 64bits ISO image from "http://www.ubuntu.com/download/server":http://www.ubuntu.com/download/server (depending on your own local machine supposed to run this VM !)
+
+3. Create a new VM to install the downloaded ISO
+
+set 1GBytes of memory, to start a small project this must met just right.
+
+create a new user with jenkins/jenkins as user/password with an administrator profile.
+
+h3. Console
+
+afeter installation, you may have some issue about console display and encoding. Default is UTF-8, but maybe you want something else.
+
+to perform some changes on console configuration, you have to run the special command:
+
+bc(shell). $ sudo dpkg-reconfigure console-setup
+
+then , just follow dialog's screen to perform the right choices.
+
+h3. Keyboard
+
+Each time I've installed from the ubuntu server distro, I had the wrong keyboard setting !
+
+So to configure your own keyboard, accorfding to your country, and your language, just execute the following line :
+
+bc(shell). $ sudo dpkg-reconfigure keyboard-config
+
+And choose your country, your keyboard disposition, your keyboard variant.
+
+h3. Remote with SSH ?
+
+If you plan to access your server through telnet, you must install the openssh-server package. Nothing easyest than apt-get command:
+
+bc(shell). $ sudo apt-get install openssh-server
+
+Just wait and try to connect from your prefered telnet/ssh client to your brand new server (don't forget to retrieve IP address of the VM ; @ifconfig@ is your pal, to be able to connect ;)
+
+to connect with your just created user (the one created during the VM installation)
+
+# from a Windows worstation :
+
+bc(shell). putty.exe" -ssh [username]@[ip or server name]
+
+# from a linux workstation :
+
+bc(shell). $ ssh [username]@[ip or server name]
+
+example:
+
+bc(shell). $ ssh [username]@[ip or server name]
+The authenticity of host '[ip or server name] ([ip or server name])' can't be established.
+ECDSA key fingerprint is 72:99:a7:5c:dd:0d:52:84:48:75:d0:43:0c:ac:8c:e1.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added '[ip or server name]' (ECDSA) to the list of known hosts.
+[username]@[ip or server name]'s password: 
+Welcome to Ubuntu 12.04.1 LTS (GNU/Linux 3.2.0-29-generic x86_64)
+ * Documentation:  https://help.ubuntu.com/
+Last login: Wed Dec 12 05:33:42 2012
+[username]@[hostname of server]:~$ 
+
+
+You'll now have to acces to your server, certificate now added to the authentified ones list.
+
+h2. Second Step : Java plateform
+
+Login to your brand new virtual server and follow the next lines.
+
+h3. 1. Java SDK
+
+h4. Java 6 SDK
+
+Install Java6 SDK from ubuntu repositories:
+
+bc(shell). $ sudo apt-get install openjdk-6-jdk
+
+Verify installation with the following command line
+
+bc(shell). $ java -version
+
+You must get the log bellow :
+
+bc(shell). java version "1.6.0_24"
+OpenJDK Runtime Environment (IcedTea6 1.11.4) (6b24-1.11.4-1ubuntu0.12.04.1)
+OpenJDK 64-Bit Server VM (build 20.0-b12, mixed mode)
+
+h4. Java 7
+
+h5. OpenJDK
+
+To perform installation of Java 7 SDK, you have to follow a similar way to Java 6:
+
+bc(shell). $ sudo apt-get install openjdk-7-jdk
+
+and then, verify version :
+
+bc(shell). $ java -version
+
+h5. Oracle SDK
+
+There is a second way to instal a Java 7 SDK. from an unofficial repository from webupd8 web site.
+
+bc(shell). $ sudo add-apt-repository ppa:webupd8team/java
+$ sudo apt-get update
+$ sudo apt-get install oracle-java7-installer
+
+One more time, to verify installation status, just execute a :
+
+bc(shell). $ java -version
+
+h4. Java Home !
+
+Now we need to set the java home ssytem variable. As our server is a java dedicated one, we can add the @JAVA_HOME@ environement variable defintion to the @/etc/environment@ file.
+
+Just edit the @/etc/environment@ file and add at end of file the line bellow :
+
+bc(shell). JAVA_HOME="/usr/lib/jvm/default-java"
+
+Then if you want to set the needed jdk, you can execute the following command:
+
+bc(shell). $ sudo update-alternatives --list java
+
+Wich will display the list of installed JDK :
+
+bc(shell). $ sudo update-alternatives --list java
+/usr/lib/jvm/java-6-openjdk-amd64/jre/bin/java
+/usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java
+
+and the select the version you want to activate in a default way.
+
+bc(shell). sudo update-alternatives --config java
+Il existe 2 choix pour l'alternative java (qui fournit /usr/bin/java).
+  Sélection   Chemin                                          Priorité  État
+------------------------------------------------------------
+  0            /usr/lib/jvm/java-6-openjdk-amd64/jre/bin/java   1061      mode automatique
+  1            /usr/lib/jvm/java-6-openjdk-amd64/jre/bin/java   1061      mode manuel
+* 2            /usr/lib/jvm/java-7-openjdk-amd64/jre/bin/java   1051      mode manuel
+Appuyez sur <Entrée> pour conserver la valeur 
+par défaut[*] ou choisissez le numéro sélectionné :
+
+and just choose between 0 to 2 for this sample.
+
+h3. 2. Maven
+
+Download from "http://maven.apache.org/download.html":http://maven.apache.org/download.html and unzip it in the /opt/tools/maven/3.0.5 path. (The current version at write time is 3.0.5)
+
+bq(note). _Note:_
+You must install the unzip package to perform unarchiving maven tool: @sudo apt-get install unzip@.
+
+Set full access to folder :
+
+bc(shell). $ sudo mkdir -p /opt/tools/java/maven/3.0.5
+$ unzip apache-maven-3.0.5.zip
+$ mv apache-maven-3.0.5/* /opt/tools/java/maven/3.0.5
+$ chown -R root:root /opt/tools/maven
+$ chmod -R 755 /opt/tools/maven/
+
+add maven to yout system path by adding the 2 lines bellow to the @/etc/environement@ file
+
+bc(shell). M2_HOME='/opt/tools/maven/3.0.5/'
+MVN_REPO='/opt/tools/maven/3.0.5/repository/'
+
+And now, add a symbolic link to mvn command:
+
+bc(shell). $ sudo ln -s /opt/tools/maven/3.0.5/bin/mvn /usr/bin/mvn
+
+then a vm reboot :
+
+bc(shell). sudo reboot
+
+and verify installation of java and mvn
+
+bc(shell). $ mvn -v
+
+You must obtain :
+
+bc(shell). Apache Maven 3.0.5 (r1232337; 2012-01-17 09:44:56+0100)
+Maven home: /opt/tools/maven
+Java version: 1.6.0_24, vendor: Sun Microsystems Inc.
+Java home: /usr/lib/jvm/java-6-openjdk-amd64/jre
+Default locale: fr_FR, platform encoding: UTF-8
+OS name: "linux", version: "3.2.0-31-generic", arch: "amd64", family: "unix"
+
+h2. Third Step : Jenkins and Sonar
+
+h3. 1. Install Jenkins
+
+h4. from a PPA repository
+
+Add the APT repository from "http://pkg.jenkins-ci.org/debian/":http://pkg.jenkins-ci.org/debian/
+
+bc(shell). $ wget -q -O - http://pkg.jenkins-ci.org/debian/jenkins-ci.org.key | sudo apt-key add -
+
+Add the following line to /etc/apt/sources.list
+
+bc(shell). $ deb http://pkg.jenkins-ci.org/debian binary/
+
+and the execute the following lines into a terminal:
+
+bc(shell). $ sudo apt-get update
+$ sudo apt-get install jenkins
+
+
+p. Verify installation with your favorite browser and open the url "http://[server ip or name]:8080/":http://[server%20ip%20or%20name]:8080/
+
+p. OK, now to perform last step , Tomcat7 installation, you must change the default jenkins listening port. To do such ting, you must edit the file @/etc/default/jenkins@ and then modify lines @HTTP_PORT=8080@ to @HTTP_PORT=8081@, and add the @--prefix=$PREFIX@ on the JENKINS&#95;ARGS definition:
+
+bc(shell). ...
+# port for HTTP connector (default 8080; disable with -1)
+HTTP_PORT=8081
+# port for AJP connector (disabled by default)
+AJP_PORT=-1
+...
+JENKINS_ARGS="--webroot=/var/cache/jenkins/war --prefix=$PREFIX --httpPort=$HTTP_PORT --ajp13Port=$AJP_PORT"
+
+
+p. then stop and start the service :
+
+bc(shell). $ sudo service jenkins stop
+$ sudo service jenkins start
+
+
+p. Verify that port change with opening the url "http://[server ip or name]:8081/jenkins":http://[server%20ip%20or%20name]:8081/jenkins.
+
+h4. 1.b. Update jenkins war manually
+
+p. To be able to install an updated version, just download the @jenkins.war@ from the official download page: "http://mirrors.jenkins-ci.org/war/latest/jenkins.war":http://mirrors.jenkins-ci.org/war/latest/jenkins.war to your prefered location (e.g. : @~/@).
+
+p. Then, stop the jenkins service (if it's already started), and move the last verion of the war file to @/usr/share/jenkins/jenkins.war@
+
+bc(shell). $ sudo service jenkins stop
+$ sudo mv jenkins.war /usr/share/jenkins/jenkins.war
+$ sudo service jenkins start
+
+p. Ok, Jenkins is now updated !
+
+h4. Option: Install Jenkins into an existing Tomcat 
+
+bq(ref). See in the next chapters to install Tomcat
+
+p. As you've just download a brand "new Jenkins version":http://mirrors.jenkins-ci.org/war/latest/jenkins.war, you can install it into the existingTomcat Server.
+
+bc(shell). $ sudo chmod 755 ~/jenkins.war
+$ sudo chown tomcat7:tomcat7 ~/jenkins.war
+$ sudo mv ~/jenkins.war /var/lib/tomcat7/webapps
+ 
+p. To make this run , just create a new repository for Jenkins:
+
+bc(shell). $ sudo mkdir /usr/share/tomcat7/.jenkins
+$ sudo chown tomcat7:tomcat7 /usr/share/tomcat7/.jenkins
+
+h5. How to set the JENKINS repository ?
+
+p. In the file  @/etc/environment@ you must specify the JENKINS_HOME with your prefered value.
+
+bc(shell). JENKINS_HOME=/var/lib/jenkins
+
+p. Now, restartingour server all files will live into thenew repository.
+
+bq(attention). Attention:
+if you've already set some jobs in your existing jenkins instance in Tomcat, you must move those to the new repository following these steps:
+
+bc(shell). $ sudo service tomcat7 stop
+$ sudo mkdir /var/lib/jenkins
+$ sudo chmod -R 755 /var/lib/jenkins
+$ sudo chown -R tomcat7:tomcat7 /var/lib/jenkins
+$ sudo mv -R /usr/share/tomcat7/.jenkins /var/lib/jenkins
+
+p. Then,you can reboot your server with a @reboot@
+
+bc(shell). $ sudo reboot
+
+p. or
+
+bc(shell). $ sudo shutdown -r 0
+
+p. Ok,after some seconds (or minutes), you are ready to use your brand new and fresh Jenkins installation.
+
+h3. 2. Sonar
+
+p. Download Sonar from "http://www.sonarsource.org/downloads/":http://www.sonarsource.org/downloads/, get the last ZIP version (here is the 3.3.2) unzip it into @/opt/tools/sonar/3.3.2/@, then change rights on the folder:
+
+bc(shell). $ wget http://dist.sonar.codehaus.org/sonar-3.3.2.zip
+$ unzip sonar-3.3.2.zip
+$ sudo mkdir -p /opt/tools/sonar/3.3.2
+$ mv sonar-3.3.2/* /opt/tools/sonar/3.3.2/
+$ sudo chown -R root:root /opt/tools/
+$ sudo chmod -R 755 /opt/tools/sonar/3.3.2/
+
+p. and start Sonar with a :
+
+bc(shell). $ /opt/tools/sonar/3.2.1/bin/sonar.sh start
+
+p. Verify Sonar web access crowling the "http://server_ip_or_name:9000/":http://server_ip_or_name:9000/ url.
+
+p. According to the last step, installing Tomcat7 with a SCM manager and a Nexus, we need to change the default listening port. go to @/opt/tools/sonar/3.3.2./conf/sonar.properties@ file and edit the following lines, and set @sonar.web.port=8082@. We willa lso need to change database configruation to switch to MySQL.
+
+bc(shell). ...
+#---------------------------------------------------------
+# WEB SETTINGS - STANDALONE MODE ONLY
+# These settings are ignored when the war file is deployed to a JEE server.
+#---------------------------------------------------------
+# Listen host/port and context path (for example / or /sonar). Default values a$
+sonar.web.host:                           [server-name]
+sonar.web.port:                           8082
+sonar.web.context:                        /sonar
+
+
+p. Stop and restart the Sonar service with a @sudo service sonar restart@, and browse the "http://server_ip_or_name:8082/sonar":http://server_ip_or_name:8082/sonar, you might discover the Sonar welcome page.
+
+h3. (Optional) Configure Sonar as a service
+
+p. make a symbolic link on the just installed sonar.sh file:
+
+bc(shell). $ sudo ln -s /opt/tools/sonar/3.3.2/bin/linux-x86-32/sonar.sh /usr/bin/sonar
+
+p. Create the following file @/etc/init.d/sonar@ and insert lines :
+
+bc(shell). #!/bin/sh
+/usr/bin/sonar $*
+
+p. Then set unix execution right :
+
+bc(shell). $ sudo chown root:root /etc/init.d/sonar
+$ sudo chmod 755 /etc/init.d/sonar
+
+p. and configure this file as a service :
+
+bc(shell). $ sudo update-rc.d sonar defaults 98 02
+
+p. Now to start or stop service, just try a
+
+1. To start Sonar service:
+
+bc(shell). $ sudo service sonar start
+
+2. To restart Sonar service:
+
+bc(shell). $ sudo service sonar restart
+
+3. To stop Sonar service:
+
+bc(shell). $ sudo service sonar stop
+
+4. To get status for Sonar service:
+
+bc(shell). $ sudo service sonar status
+
+h4. MySQL server (optional)
+
+Install the MySQL server
+
+bc(shell). $ sudo apt-get install mysql-server
+
+
+and create a MySQL new database sonar :
+
+bc(shell). $ mysql -u root -p
+CREATE DATABASE sonar CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE USER 'sonar' IDENTIFIED BY 'sonar';
+GRANT ALL ON sonar.* TO 'sonar'@'%' IDENTIFIED BY 'sonar';
+GRANT ALL ON sonar.* TO 'sonar'@'localhost' IDENTIFIED BY 'sonar';
+FLUSH PRIVILEGES;
+
+
+Set the default password with your prefered value :)
+
+Edit the sonar configuration file again (@/opt/tools/sonar/3.3.2./conf/sonar.properties@ ) to change database: comment type H2 section and uncomment the MySQL section.
+
+bc(shell). $ sudo gedit /opt/tools/sonar/3.3.2./conf/sonar.properties
+
+
+bc(shell). ...
+# Comment the following line to deactivate the default embedded database.
+#sonar.jdbc(shell).url:                            jdbc:h2:tcp://localhost:9092/sonar
+#sonar.jdbc(shell).driverClassName:                org.h2.Driver
+...
+#----- MySQL 5.x/6.x
+# Comment the embedded database and uncomment the following line to use MySQL
+sonar.jdbc(shell).url:                            jdbc:mysql://localhost:3306/sonar?useUnicode=true&characterEncoding=utf8&rewri$
+# Optional properties
+sonar.jdbc(shell).driverClassName:                com.mysql.jdbc(shell).Driver
+
+
+And now restart sonar service with a @sudo service sonar restart@ and try to browser http://[server ip or name]:8082/sonar.
+
+h2. Fourth Step: configuration
+
+OK, then configure Jenkins to accept JDK, Maven and Sonar with the right bundle of plugins; choose the following list of plugins:
+
+* *git plugin*, don't forget to set the git command path to /usr/bin/git
+* *sonar plugin*, set the sonart path to /opt/tools/sonar/3.2.1
+* set the *maven path* to /opt/tools/maven/3.0.5
+
+Optionaly you can add :
+
+* *github plugin* to connect github to one of your projects
+* *gith OAuth security*login (optional) to authenticate your Continuous Integration Server users with Github users.
+
+h2. Start : Create a Job !
+
+1. Named your project
+
+2. Select your maven version (the just installed 3.0.5 version)
+
+3. Set the git repository (e.g. "http://bitbucket.org/McGivrer/easywebapp.git":http://bitbucket.org/McGivrer/easywebapp.git :)
+
+4. Activate Sonar in the optional post-build actions (just add Sonar as post action)
+
+go back to the Jenkins home page and then press the magic Build button !
+
+Wait...
+
+Done !
+
+Ready to read build state and tests results ?
+
+p=. !images/EasyWebApp_Jenkins.png.scaled.1000.jpg!
+^figure 1 - Jenkins displaying build results^
+
+p=. !images/Sonar_E_syWebApp.png.scaled.1000.jpg!
+^figure 2 - Sonar displaying project analyses with the &quot;Time Machine&quot; view^
+
+h2. Very useful tricks
+
+To perform good build and better results, it's better to add some additional plugins to Jenkins.
+
+Here is the list of Beautiful things:
+
+* "OpenId":https://wiki.jenkins-ci.org/display/JENKINS/OpenID+plugin is an authentication plugin to perform user authentication with an OpenID system. Easily you will be able to connect to Google Account with the specific openId option in the Jenkins administration/configuration panel, using the specific url like @http://www.google.com/accounts/o8/id/@.
+
+
+* "GoogleCalendarPlugin":https://wiki.jenkins-ci.org/display/JENKINS/Google+Calendar+Plugin will publish build results to a specific Google Calendar. Very useful to analyze build stability over the time. Configuration is really simple, just create a Google Calendar or get your already existing one, and from Parameters/general setting, get the XML private url and past it onto your Job configuration. Set authentication stuff and activate &quot;All builds&quot; options, that's it !
+
+h2. Add a SCM Manager
+
+To set a full services stack to our build server, we are going to add 2 new components:
+
+# A Source Configuration Manager with the SCM-Manager tool,
+# An Artificat Repository Manager with Nexus from Sonatype.
+
+h3. Tomcat 7 ?
+
+Just install the ubuntu default tomcat server with the following commands:
+
+bc(shell). $ sudo apt-get install tomcat7
+
+
+Optionaly you can install the @tomcat7-admin@ module to manage java application on the tomcat7 server.
+
+h3. SCM-Manager
+
+First, download the SCM manager web app from "scm-manager/wiki/download/scm-webapp-1.22.war":http://maven.scm-manager.org/nexus/content/repositories/releases/sonia/scm/scm-webapp/1.22/scm-webapp-1.22.war section on the bitbucket repository wiki.
+
+and the copy this @.war@ file to /var/lib/tomcat7/webapps/scm.war
+
+bc(shell). $ sudo mkdir /usr/share/tomcat7/.scm
+$ sudo chown tomcat7:tomcat7 /usr/share/tomcat7/.scm
+$ sudo chmod -R 755 /usr/share/tomcat7/.scm
+$ sudo cp ./scm-webapp-1.22.war /var/lib/tomcat7/webapps/scm.war
+
+Just wait some minutes (depends of your machine processor/ram/hd performances), and try "http://localhost:8080/scm/":http://localhost:8080/scm/. you must discover the welcome page of SCM Manager.
+
+bq(note). _Note:_
+The default scm user account is scmadmin/scmadmin.
+
+h2. Add Artifact Repository
+
+What would be an integration server without an artifact repository ?
+
+h3. Nexus OSS
+
+So please, try and install the Nexus appklciation OSS edition from sonatype download page : "http://www.sonatype.org/nexus/go":http://www.sonatype.org/nexus/go, or by shell script
+
+bc(shell). $ wget http://www.sonatype.org/downloads/nexus-2.2-01.war
+$ sudo mkdir /usr/share/tomcat7/sonatype-work
+$ sudo chown tomcat7:tomcat7 /usr/share/tomcat7/sonatype-work
+$ sudo chmod -R 755 /usr/share/tomcat7/sonatype-work
+$ sudo cp nexus-2.2-01.war /var/lib/tomcat7/webapps/nexus.war
+
+
+Ok, just try to browse "http://localhost:8080/nexus":http://localhost:8080/nexus
+
+h2. Enterprise Oriented Wiki ?
+
+h3. X-Wiki
+
+OK, everybody know what a wiki is, wikipedia, the internet encyclopedia is the best example.
+Today, in an agile view of application development, Wiki is for modern project what doc was for V-Projects.
+
+So, download the war for such application from "www.xwiki.org":http://download.forge.objectweb.org/xwiki/xwiki-enterprise-web-4.4.war .
+
+And as for other web application for the cibox server, just move (or copy) it to the tomcat webapps path.
+
+bc[sh]. $sudo cp xwiki-enterprise-web-4.4.war /var/lib/tomcat7/webapps/xwiki.war
+
+h2. Agile project management tool ?
+
+h3. IceScrum is for you !
+
+Download the war from "http://www.icescrum.org/downloads":http://www.icescrum.org/downloads/icescrum_R5_5.1_war.zip and deploy it to tomcat7.
+
+$ sudo cp icescrum_R5_5.1_war.zip /var/lib/tomcat7/webapps/icescrum.war
+
+bq(note). _Note:_ 
+More information about configuration on the official "install-guide":https://www.kagilum.com/fr/documentation/install-guide/ page.
+
+bq(attention). *Attention*:
+A lot of specific configuration are needed to make it run on a tomcat server. Please note that author is not responsible for inconveniant created by this tool.
+
+
+h2. Android build ?
+
+We need to build Android application in our continuous integration pipe ? No problem, we just have to add the @android-sdk-linux@ kit.
+
+First download the kit :
+
+bc[shell]. $ wget http://dl.google.com/android/android-sdk_r21.0.1-linux.tgz
+$ tar -zxvf android-sdk_r21.0.1-linux.tgz
+$ sudo mkdir -p /opt/tools/android-sdk-linux/r21.0.1
+$ sudo mv android-sdk_r21.0.1-linux/*  /opt/tools/android-sdk-linux/r21.0.1/
+$ sudo chown -R root:root /opt/tools/android-sdk-linux
+$ sudo chmod -R 755 /opt/tools/android-sdk-linux
+
+
+Go and edit again the @/etc/environment@ file to add the ANDROID&#95;HOME variable:
+
+bc(shell). sudo nano /etc/environment
+
+and add the following line at end of file :
+
+bc(shell). ANDROID_HOME='/opt/tools/android-sdk-linux/r21.0.1'
+
+Last step for android is to install the platform tools :
+
+bc(shell). /tools/android update sdk --no-ui --filter platform-tool
+
+and the Jenkins Andoid plugin and configure some things to make it run (see "http://code.google.com/p/maven-android-plugin/wiki/GettingStarted":http://code.google.com/p/maven-android-plugin/wiki/GettingStarted for more information).
+
+h2. Conclusion
+
+Ok, now you are ready to perform great Java and Android application continuous integration.
+
+Have fun !
+
+McG.

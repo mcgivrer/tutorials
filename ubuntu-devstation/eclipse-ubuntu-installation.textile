@@ -1,0 +1,198 @@
+h1(title). Java Development Workstation
+
+h2(subtitle).  How to setup java workstation on ubuntu.
+
+h2. step 1. Java SDK
+
+Install the Java Development Kit :
+
+bc(console). $ sudo apt-get install openjdk-6-jdk
+$ sudo apt-get install openjdk-7-jdk
+
+Java version is according to your own needs.
+You can also install the Oracle JDK edition :
+
+bc(console). $ sudo add-apt-repository -y ppa:webupd8team/java
+$ sudo apt-get update
+$ sudo apt-get install -y oracle-jdk7-installer
+$ update-alternatives --display java
+
+h2. step 2. Eclipse
+
+Go to "http://www.eclipse/org/downloads/":http://www.eclipse/org/downloads/
+
+then download the JavaEE version from your prefered location. Then you will just have to follow the next steps.
+
+h3. Prepare
+
+first prepare a directory where to install all java software :
+
+bc(console).  $ sudo mkdir -p /opt/tools/java/eclipse
+
+then prepare a specific directory for your multiple eclipse version (if needed) :
+
+bc(console). $ sudo mkdir -p /opt/tools/java/eclipse/3.7 # for Indigo
+$ sudo mkdir -p /opt/tools/java/eclipse/4.2 # for Juno
+
+h3. Unzip
+
+now, unzip downloaded file :
+
+bc(console). $ tar -zxvf eclipse-indigo-*.tar.gz
+$ sudo mv eclipse/* /opt/tools/java/eclipse/3.7/
+$ rm eclipse
+$ tar -zxvf eclipse-juno-*.tar.gz
+$ sudo mv eclipse/* /opt/tools/java/eclipse/4.2/
+$ rm eclipse
+
+and then set rights to those new files and change owner to root :
+
+bc(console). $ chmod -R 755 /opt
+$ chown -R root:root /opt
+
+Ok, now how to create a shortcut to execute such software ?
+
+h3. Script !
+
+First, create a symbolique link to the needed eclipse version :
+
+bc(console). $ ln -s /opt/tools/java/eclipse/3.7 /opt/tools/java/eclipse/eclipse
+
+ok, and now create a shell script to start eclipse:
+
+bc(console).  $ sudo touch /usr/bin/eclipse
+$ sudo nano /usr/bin/eclipse
+
+paste the following lines :
+
+bc(console). #!/bin/sh
+export ECLIPSE_HOME=$JAVA_TOOLS_HOME/eclipse/$ECLIPSE_VERSION
+$ECLIPSE_HOME/eclipse $1
+  
+And set rights and owner :
+
+bc(console). $ sudo chmod 755 /usr/bin/eclipse
+$ sudo chmod root:root /usr/bin/eclipse
+
+So, Eclipse is ready at run.
+
+h3. Desktop
+
+On **Linux** workstation, create a shortcut on your favorite Desktop with adding a @*.desktop@ file to a specific system path. So,  Create a new file :
+
+bc(console). $ sudo nano /usr/share/applications/eclipse.desktop
+
+and the copy the next lines into :
+
+bc(properties). [Desktop Entry]
+Name=Eclipse 
+Type=Application
+Exec=/opt/tools/java/eclipse/eclipse/eclipse
+Terminal=false
+Icon=/opt/tools/java/eclipse/eclipse/icon.xpm
+Comment=Integrated Development Environment
+NoDisplay=false
+Categories=Development;IDE
+Name[en]=eclipse.desktop
+
+bq. **Note :** 
+For the **Windows** flavour, just @CTRL@ + @SHIFT@ + `Drag & Drop` the @eclipse.exe@ file to your favorite place on the desktop/folder. Rename the just created shortlink with a significant name like "Eclipse Indigo 3.7", or something like this.
+
+h2. step 3. Maven, the builder
+
+Yes, to work with Java, we need a build tool. here we will use Maven 3.0.4.
+
+h3. Download and install
+
+browser the "http://maven.apache.org/download.html":http://maven.apache.org/download.html and download the *.tar.gz file edition for version 3.0.4.
+
+create a target directory:
+
+bc(console). $ sudo mkdir -p /opt/tools/java/maven/3.0.4
+
+unzip and move the files to /opt target :
+
+bc(console). $ tar -zxvf apache-maven-3.0.4.tar.gz
+$ mv apache-maven-3.0.4/* /opt/tools/java/maven/3.0.4
+
+ok, now maven is installed.
+
+
+
+h2. step 4. Environment
+
+We have to set the MVN_HOME and the MVN_REPO.
+
+bc(console). $ sudo nano /etc/skel/.bashrc
+
+copy at end of file:
+
+bc(file). . /etc/default/javaenvsettings
+
+
+bq. **Note :**
+_Beware of the space character between "." and "/"._
+
+and create a @/etc/default/javaenvsettins@ file
+
+bc(console). $ sudo gedit /etc/default/javaenvsettings
+
+add the following lines:
+
+bc(bash).  #!/bin/sh
+# Tools Environment settings
+#--------------------------
+export ECLIPSE_VERSION=3.7
+export MAVEN_VERSION=3.0.4
+# If exists execute user settings
+if [ -f ~/.javaenvsettings ]; then
+ . ~/.javaenvsettings
+fi
+# set Tools path
+export TOOLS_HOME=/opt/tools
+export JAVA_TOOLS_HOME=$TOOLS_HOME/java
+export JAVA_HOME=/usr/lib/jvm/java-6-openjdk-java/
+# set Maven Settings
+export MAVEN_HOME=$JAVA_TOOLS_HOME/maven/$MAVEN_VERSION
+export M2_HOME=$MAVEN_HOME
+export M2=$MAVEN_HOME/bin
+# set Eclipse Path
+export ECLIPSE_HOME=$JAVA_TOOLS_HOME/eclipse/$ECLIPSE_VERSION
+# Path modification according to Tools Settings
+export PATH=$PATH:$M2:$ECLIPSE_HOME
+
+and to perform the last "touch", just set rights and owner for the file:
+
+bc(console).  $ sudo chmod 755 /etc/default/javaenvsettings
+$ sudo chown root:root /etc/default/javaenvsettings
+
+You have certainly noticed the execution of a @~/.javaenvsettings@ file.
+
+If such file exists, user can set its own values for java environement tools versions:
+
+bc(console). #!/bin/sh
+# Uncomment the line to activate the needed eclipse version.
+#export ECLIPSE_VERSION=4.2
+#export ECLIPSE_VERSION=3.7
+
+Don't forget to set rights and owner :
+
+bc(console).  $ sudo chmod 755 /etc/skel/.javaenvsettings
+$ sudo chown root:root /etc/skel/.javaenvsettings
+
+You can create such file and copy it to @/etc/skel/.javaenvsettings@ so a default file, with all lines commented, will be automatically created with a new user's home :  @/home/[username]/.javaenvsettings@.
+
+You have now set a real highly configurable java environment for all your existing and next users.
+
+bq. **Note :**
+_if you are already connected, your existing users don't have such execution in their ~/.bashrc file, so don't forget to edit @~/.bashrc@ to add @. /etc/defaults/javaenvsettings@ at end of file._
+
+h2. Conclusion
+
+Now each new user created on the workstation would have a java environment already set.
+Just open a temrinal and execute @eclipse@ or @mvn@ command to run needed tools. 
+That's all folks !
+
+Have Fun !
+
+McG.
